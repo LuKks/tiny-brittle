@@ -1,0 +1,32 @@
+{
+  "name": "tiny-brittle",
+  "version": "0.0.0",
+  "description": "Brittle compiled with zero dependencies",
+  "main": "boot/index.js",
+  "files": [
+    "boot/bin.js"
+  ],
+  "bin": {
+    "brittle": "boot/bin.js"
+  },
+  "scripts": {
+    "test": "standard && node test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lukks/tiny-brittle.git"
+  },
+  "author": "Lucas Barrena (LuKks)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/lukks/tiny-brittle/issues"
+  },
+  "homepage": "https://github.com/lukks/tiny-brittle#readme",
+  "devDependencies": {
+    "boot-cli": "file:../boot-cli",
+    "standard": "^17.1.0"
+  },
+  "dependencies": {
+    "test-tmp": "^1.2.1"
+  }
+}
