@@ -4,8 +4,6 @@ const { spawnSync } = require('child_process')
 const Bootdrive = require('bootdrive-cli')
 const tmp = require('test-tmp')
 
-const shell = process.platform === 'win32'
-
 main().catch(err => {
   console.error(err)
   process.exit(1)
@@ -20,7 +18,7 @@ async function testLib () {
   const out = await tmp()
   const target = path.join(__dirname, 'src')
 
-  spawnSync('npm', ['install'], { cwd: target, stdio: 'inherit', shell })
+  spawnSync('npm', ['install'], { cwd: target, stdio: 'inherit' })
 
   // It's not doing anything special, just moving all files due force option
   await Bootdrive.export(target, {
@@ -102,7 +100,7 @@ async function testBin () {
   const out = await tmp()
   const target = path.join(__dirname, 'src')
 
-  spawnSync('npm', ['install'], { cwd: target, shell })
+  spawnSync('npm', ['install'], { cwd: target })
 
   // It's not doing anything special, just moving all files due force option
   await Bootdrive.export(target, {
@@ -176,16 +174,16 @@ async function testBin () {
 }
 
 async function tester (brittle, name, fn, expectedOut, expectedMore) {
-  const dir = await tmp()
-  const filename = path.join(dir, 'test.js')
+  // const dir = await tmp()
+  const filename = path.join(path.dirname(brittle), '_test.js')
 
   await fs.promises.writeFile(filename, `
-    const test = require('${brittle}')
+    const test = require('./${path.basename(brittle)}')
 
     test('${name}', (${fn.toString()}))
   `)
 
-  const { status, error, stdout, stderr } = spawnSync(process.execPath, [filename], { encoding: 'utf8', shell })
+  const { status, error, stdout, stderr } = spawnSync(process.execPath, [filename], { encoding: 'utf8' })
 
   validate({ status, error, stdout, stderr }, expectedOut, expectedMore)
 
@@ -204,7 +202,7 @@ async function cli (brittle, file, expectedOut, expectedMore) {
 
   args.push(filename)
 
-  const { status, error, stdout, stderr } = spawnSync(cmd, args, { cwd, encoding: 'utf8', shell })
+  const { status, error, stdout, stderr } = spawnSync(cmd, args, { cwd, encoding: 'utf8' })
 
   validate({ status, error, stdout, stderr }, expectedOut, expectedMore)
 
