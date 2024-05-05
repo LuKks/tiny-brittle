@@ -27,7 +27,7 @@ async function testLib () {
     force: true
   })
 
-  const brittle = JSON.stringify(path.join(out, 'index.js'))
+  const brittle = path.join(out, 'index.js')
 
   await tester(brittle, 'pass',
     async function (t) {
@@ -169,12 +169,12 @@ async function testBin () {
 }
 
 async function tester (brittle, name, fn, expectedOut, expectedMore) {
-  name = JSON.stringify(name)
-
-  const script = `const test = require(${brittle})\n\nconst _fn = (${fn.toString()})\n\ntest(${name}, _fn)`
+  const script = `const test = require('${brittle}')\n\nconst _fn = (${fn.toString()})\n\ntest('${name}', _fn)`
   const { status, error, stdout, stderr } = spawnSync(process.execPath, ['-e', script], { encoding: 'utf8', windowsVerbatimArguments: true })
 
   validate({ status, error, stdout, stderr }, expectedOut, expectedMore)
+
+  console.log('OK LIB', name)
 }
 
 async function cli (brittle, file, expectedOut, expectedMore) {
@@ -192,6 +192,8 @@ async function cli (brittle, file, expectedOut, expectedMore) {
   const { status, error, stdout, stderr } = spawnSync(cmd, args, { cwd, encoding: 'utf8', windowsVerbatimArguments: true })
 
   validate({ status, error, stdout, stderr }, expectedOut, expectedMore)
+
+  console.log('OK CLI')
 }
 
 function validate ({ status, error, stdout, stderr }, expectedOut, expectedMore) {
