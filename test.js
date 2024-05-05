@@ -172,7 +172,7 @@ async function tester (brittle, name, fn, expectedOut, expectedMore) {
   name = JSON.stringify(name)
 
   const script = `const test = require(${brittle})\n\nconst _fn = (${fn.toString()})\n\ntest(${name}, _fn)`
-  const { status, error, stdout, stderr } = spawnSync(process.execPath, ['-e', script], { encoding: 'utf8' })
+  const { status, error, stdout, stderr } = spawnSync(process.execPath, ['-e', script], { encoding: 'utf8', shell: true })
 
   validate({ status, error, stdout, stderr }, expectedOut, expectedMore)
 }
@@ -189,7 +189,7 @@ async function cli (brittle, file, expectedOut, expectedMore) {
 
   args.push(filename)
 
-  const { status, error, stdout, stderr } = spawnSync(cmd, args, { cwd, encoding: 'utf8' })
+  const { status, error, stdout, stderr } = spawnSync(cmd, args, { cwd, encoding: 'utf8', shell: true })
 
   validate({ status, error, stdout, stderr }, expectedOut, expectedMore)
 }
