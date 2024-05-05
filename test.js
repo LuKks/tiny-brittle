@@ -95,7 +95,7 @@ async function testBin () {
   const out = await tmp()
   const target = path.join(__dirname, 'src')
 
-  spawnSync('npm', ['install'], { cwd: target })
+  spawnSync('npm', ['install'], { cwd: target, shell: true })
 
   // It's not doing anything special, just moving all files due force option
   await Bootdrive.export(target, {
@@ -169,8 +169,16 @@ async function testBin () {
 }
 
 async function tester (brittle, name, fn, expectedOut, expectedMore) {
-  const script = `const test = require('${brittle}');\n\nconst _fn = (${fn.toString()});\n\ntest('${name}', _fn);`
-  const { status, error, stdout, stderr } = spawnSync(process.execPath, ['-e', script], { encoding: 'utf8', windowsVerbatimArguments: true })
+  const dir = await tmp()
+  const filename = path.join(dir, 'test.js')
+
+  await fs.promises.writeFile(filename, `
+    const test = require('${brittle}')
+
+    test('${name}', (${fn.toString()}))
+  `)
+
+  const { status, error, stdout, stderr } = spawnSync(process.execPath, [filename], { encoding: 'utf8' })
 
   validate({ status, error, stdout, stderr }, expectedOut, expectedMore)
 
@@ -189,7 +197,7 @@ async function cli (brittle, file, expectedOut, expectedMore) {
 
   args.push(filename)
 
-  const { status, error, stdout, stderr } = spawnSync(cmd, args, { cwd, encoding: 'utf8', windowsVerbatimArguments: true })
+  const { status, error, stdout, stderr } = spawnSync(cmd, args, { cwd, encoding: 'utf8' })
 
   validate({ status, error, stdout, stderr }, expectedOut, expectedMore)
 
