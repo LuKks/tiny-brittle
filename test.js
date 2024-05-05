@@ -16,8 +16,12 @@ async function main () {
 
 async function testLib () {
   const out = await tmp()
+  const target = path.join(__dirname, 'src')
 
-  await Bootdrive.export(path.join(__dirname, 'src'), {
+  spawnSync('npm', ['install'], { cwd: target })
+
+  // It's not doing anything special, just moving all files due force option
+  await Bootdrive.export(target, {
     entrypoint: ['index.js', 'bin.js'],
     out,
     force: true
@@ -89,8 +93,12 @@ async function testLib () {
 
 async function testBin () {
   const out = await tmp()
+  const target = path.join(__dirname, 'src')
 
-  await Bootdrive.export(path.join(__dirname, 'src'), {
+  spawnSync('npm', ['install'], { cwd: target })
+
+  // It's not doing anything special, just moving all files due force option
+  await Bootdrive.export(target, {
     entrypoint: ['index.js', 'bin.js'],
     out,
     force: true

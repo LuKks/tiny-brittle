@@ -4,7 +4,6 @@
   "description": "Brittle compiled with zero dependencies",
   "main": "boot/index.js",
   "files": [
-    "boot/bin.js",
     "boot"
   ],
   "bin": {

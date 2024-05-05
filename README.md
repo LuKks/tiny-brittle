@@ -46,6 +46,10 @@ git clone git@github.com:lukks/tiny-brittle.git
 cd tiny-brittle
 ```
 
+Install dependencies for `src`
+
+`npm install -C ./src`
+
 And bundle it within that working directory
 
 `bootdrive export -d ./src -e index.js -e bin.js -o ./boot --force`
