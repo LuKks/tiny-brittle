@@ -1,6 +1,6 @@
 const fs = require('fs')
 const path = require('path')
-const { spawnSync } = require('child_process')
+const { spawn, spawnSync } = require('child_process')
 const Bootdrive = require('bootdrive-cli')
 const tmp = require('test-tmp')
 
@@ -61,22 +61,17 @@ async function testLib () {
         not ok 1 - failed
           ---
           operator: fail
-          source: |
-                test('fail', (async function (t) {
-                  t.fail()
-            --------^
-                }))
           stack: |
-            /tmp/tmp-test-253abbc1b3c25/test.js:5:9
-            Test._run (/tmp/tmp-test-62c151856b73b/node_modules/brittle/index.js:576:13)
+            [eval]:5:9
+            Test._run (/tmp/tmp-test-d873e72ba7656/node_modules/brittle/index.js:576:13)
             process.processTicksAndRejections (node:internal/process/task_queues:95:5)
           ...
-    not ok 1 - fail # time = 4.261567ms
+    not ok 1 - fail # time = 3.813937ms
 
     1..1
     # tests = 0/1 pass
     # asserts = 0/1 pass
-    # time = 10.069995ms
+    # time = 9.139066ms
 
     # not ok
     `,
@@ -175,15 +170,20 @@ async function testBin () {
 
 async function tester (brittle, name, fn, expectedOut, expectedMore) {
   // const dir = await tmp()
-  const filename = path.join(path.dirname(brittle), '_test.js')
+  /* const filename = path.join(path.dirname(brittle), '_test.js')
 
   await fs.promises.writeFile(filename, `
     const test = require('./${path.basename(brittle)}')
 
     test('${name}', (${fn.toString()}))
-  `)
+  `) */
 
-  const { status, error, stdout, stderr } = spawnSync(process.execPath, [filename], { encoding: 'utf8' })
+  // const { status, error, stdout, stderr } = spawnSync(process.execPath, [filename], { encoding: 'utf8' })
+  const { exitCode: status, error, stdout, stderr } = await executeCode(`
+    const test = require('${brittle}')
+
+    test('${name}', (${fn.toString()}))
+  `)
 
   validate({ status, error, stdout, stderr }, expectedOut, expectedMore)
 
@@ -269,4 +269,39 @@ function standardizeTap (stdout) {
     .map(line => line.includes('tmp-test-') ? null : line)
     .filter(n => n)
     .join('\n')
+}
+
+function executeCode (script) {
+  return new Promise((resolve, reject) => {
+    const args = ['-e', script]
+    const opts = { timeout: 30000, cwd: path.join(__dirname) }
+    const child = spawn(process.execPath, args, opts)
+
+    let exitCode
+    let stdout = ''
+    let stderr = ''
+
+    child.on('exit', function (code) {
+      exitCode = code
+    })
+
+    child.on('close', function () {
+      resolve({ exitCode, stdout, stderr })
+    })
+
+    child.on('error', function (error) {
+      resolve({ exitCode, error, stdout, stderr })
+    })
+
+    child.stdout.setEncoding('utf-8')
+    child.stderr.setEncoding('utf-8')
+
+    child.stdout.on('data', function (chunk) {
+      stdout += chunk
+    })
+
+    child.stderr.on('data', function (chunk) {
+      stderr += chunk
+    })
+  })
 }
