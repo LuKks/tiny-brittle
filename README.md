@@ -37,7 +37,7 @@ test('basic', function (t) {
 
 First, you need the Bootdrive CLI
 
-`npm i -g boot-cli`
+`npm i -g bootdrive-cli`
 
 Then clone the repo, and go into the directory
 
@@ -48,7 +48,7 @@ cd tiny-brittle
 
 And bundle it within that working directory
 
-`boot export -d ./src -e bin.js -o ./boot`
+`bootdrive export -d ./src -e index.js -e bin.js -o ./boot --force`
 
 </details>
 

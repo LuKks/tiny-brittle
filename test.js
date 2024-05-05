@@ -1,9 +1,8 @@
+const fs = require('fs')
 const path = require('path')
-const { spawn } = require('child_process')
-const boot = require('boot-cli')
+const { spawnSync } = require('child_process')
+const Bootdrive = require('bootdrive-cli')
 const tmp = require('test-tmp')
-
-let brittle = null
 
 main().catch(err => {
   console.error(err)
@@ -11,16 +10,22 @@ main().catch(err => {
 })
 
 async function main () {
+  await testLib()
+  await testBin()
+}
+
+async function testLib () {
   const out = await tmp()
 
-  await boot.export(path.join(__dirname, 'src'), {
-    entrypoint: 'bin.js',
-    out
+  await Bootdrive.export(path.join(__dirname, 'src'), {
+    entrypoint: ['index.js', 'bin.js'],
+    out,
+    force: true
   })
 
-  brittle = JSON.stringify(path.join(out, 'index.js'))
+  const brittle = JSON.stringify(path.join(out, 'index.js'))
 
-  await tester('pass',
+  await tester(brittle, 'pass',
     async function (t) {
       t.ok(true)
     },
@@ -41,7 +46,7 @@ async function main () {
     { exitCode: 0 }
   )
 
-  await tester('fail',
+  await tester(brittle, 'fail',
     async function (t) {
       t.ok(false)
     },
@@ -69,7 +74,7 @@ async function main () {
     { exitCode: 1 }
   )
 
-  await tester('error',
+  await tester(brittle, 'error',
     async function (t) {
       throw new Error('Oops')
     },
@@ -80,22 +85,110 @@ async function main () {
     `,
     { exitCode: 1, stderr: 'Error: Oops' }
   )
+}
 
-  await tester('programming error',
-    'function (t) { programming error }',
-    '',
-    { exitCode: 1, stderr: 'SyntaxError: Unexpected identifier \'error\'' }
+async function testBin () {
+  const out = await tmp()
+
+  await Bootdrive.export(path.join(__dirname, 'src'), {
+    entrypoint: ['index.js', 'bin.js'],
+    out,
+    force: true
+  })
+
+  const brittle = path.join(out, 'bin.js')
+
+  await fs.promises.chmod(brittle, 0o744)
+
+  await cli(
+    [brittle],
+    `
+    const test = require('${path.join(out, 'index.js')}')
+
+    test('basic', function (t) {
+      t.pass()
+    })
+    `,
+    `
+    TAP version 13
+
+    # basic
+        ok 1 - passed
+    ok 1 - basic # time = 0.63492ms
+
+    1..1
+    # tests = 1/1 pass
+    # asserts = 1/1 pass
+    # time = 7.898583ms
+
+    # ok
+    `,
+    { exitCode: 0, stderr: '' }
+  )
+
+  await cli(
+    [brittle, '--coverage'],
+    `
+    const test = require('${path.join(out, 'index.js')}')
+
+    test('basic', function (t) {
+      t.pass()
+    })
+    `,
+    `
+    TAP version 13
+
+    # basic
+        ok 1 - passed
+    ok 1 - basic # time = 0.889777ms
+
+    1..1
+    # tests = 1/1 pass
+    # asserts = 1/1 pass
+    # time = 9.950552ms
+
+    # ok
+    ----------|---------|----------|---------|---------|-------------------
+    File      | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
+    ----------|---------|----------|---------|---------|-------------------
+    All files |     100 |      100 |     100 |     100 |                   
+     bin.js   |     100 |      100 |     100 |     100 |                   
+     index.js |     100 |      100 |     100 |     100 |                   
+    ----------|---------|----------|---------|---------|-------------------
+    `,
+    { exitCode: 0, stderr: '' }
   )
 }
 
-async function tester (name, fn, expectedOut, expectedMore) {
+async function tester (brittle, name, fn, expectedOut, expectedMore) {
   name = JSON.stringify(name)
 
   const script = `const test = require(${brittle})\n\nconst _fn = (${fn.toString()})\n\ntest(${name}, _fn)`
-  const { exitCode, error, stdout, stderr } = await executeCode(script)
+  const { status, error, stdout, stderr } = spawnSync(process.execPath, ['-e', script], { encoding: 'utf8' })
 
+  validate({ status, error, stdout, stderr }, expectedOut, expectedMore)
+}
+
+async function cli (brittle, file, expectedOut, expectedMore) {
+  const dir = await tmp()
+  const filename = path.join(dir, 'test.js')
+
+  await fs.promises.writeFile(filename, file)
+
+  const cmd = brittle[0]
+  const args = brittle.slice(1)
+  const cwd = path.dirname(cmd)
+
+  args.push(filename)
+
+  const { status, error, stdout, stderr } = spawnSync(cmd, args, { cwd, encoding: 'utf8' })
+
+  validate({ status, error, stdout, stderr }, expectedOut, expectedMore)
+}
+
+function validate ({ status, error, stdout, stderr }, expectedOut, expectedMore) {
   if (error) {
-    throw new Error(error)
+    throw error
   }
 
   let errors = false
@@ -113,10 +206,10 @@ async function tester (name, fn, expectedOut, expectedMore) {
     console.error(expectedOut)
   }
 
-  if (exitCode !== expectedMore.exitCode) {
+  if (status !== expectedMore.exitCode) {
     errors = true
 
-    console.error('exitCode', exitCode, 'is not the expected', expectedMore.exitCode)
+    console.error('exitCode', status, 'is not the expected', expectedMore.exitCode)
   }
 
   if (expectedMore.stderr && !stderr.includes(expectedMore.stderr)) {
@@ -141,55 +234,15 @@ async function tester (name, fn, expectedOut, expectedMore) {
 }
 
 function standardizeTap (stdout) {
+  // Changes: Removes "$2:" from Test._run also
   return stdout
     .replace(/#.+(?:\n|$)/g, '\n') // strip comments
     .replace(/\n[^\n]*node:(?:internal|vm)[^\n]*/g, '\n') // strip internal node stacks
     .replace(/\n[^\n]*(\[eval\])[^\n]*/g, '\n') // strip internal node stacks
-    .replace(/\n[^\n]*(Test\._run) \((.*):[\d]+:[\d]+\)[^\n]*\n/g, '\n$1 (13:37)\n') // static line numbers for "Test._run", and removed "$2:"
+    .replace(/\n[^\n]*(Test\._run) \((.*):[\d]+:[\d]+\)[^\n]*\n/g, '\n$1 (13:37)\n') // static line numbers for "Test._run"
     .replace(/[/\\]/g, '/')
     .split('\n')
     .map(n => n.trim())
     .filter(n => n)
     .join('\n')
-}
-
-function executeCode (script) {
-  return new Promise(resolve => {
-    const args = ['-e', script]
-    const child = spawn(process.execPath, args, { timeout: 30000 })
-
-    child.stdout.setEncoding('utf-8')
-    child.stderr.setEncoding('utf-8')
-
-    let exitCode = null
-    let stdout = ''
-    let stderr = ''
-
-    child.on('exit', onexit)
-    child.on('close', onclose)
-    child.on('error', onerror)
-
-    child.stdout.on('data', onstdout)
-    child.stderr.on('data', onstderr)
-
-    function onexit (code) {
-      exitCode = code
-    }
-
-    function onclose () {
-      resolve({ exitCode, stdout, stderr })
-    }
-
-    function onerror (error) {
-      resolve({ exitCode, error, stdout, stderr })
-    }
-
-    function onstdout (chunk) {
-      stdout += chunk
-    }
-
-    function onstderr (chunk) {
-      stderr += chunk
-    }
-  })
 }

@@ -4,7 +4,8 @@
   "description": "Brittle compiled with zero dependencies",
   "main": "boot/index.js",
   "files": [
-    "boot/bin.js"
+    "boot/bin.js",
+    "boot"
   ],
   "bin": {
     "brittle": "boot/bin.js"
@@ -23,10 +24,8 @@
   },
   "homepage": "https://github.com/lukks/tiny-brittle#readme",
   "devDependencies": {
-    "boot-cli": "file:../boot-cli",
-    "standard": "^17.1.0"
-  },
-  "dependencies": {
+    "bootdrive-cli": "^1.0.0",
+    "standard": "^17.1.0",
     "test-tmp": "^1.2.1"
   }
 }
