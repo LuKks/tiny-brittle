@@ -18,7 +18,7 @@ async function testLib () {
   const out = await tmp()
   const target = path.join(__dirname, 'src')
 
-  spawnSync('npm', ['install'], { cwd: target })
+  spawnSync('npm', ['install'], { cwd: target, stdio: 'inherit' })
 
   // It's not doing anything special, just moving all files due force option
   await Bootdrive.export(target, {
