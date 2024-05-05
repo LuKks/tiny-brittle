@@ -18,7 +18,7 @@ async function testLib () {
   const out = await tmp()
   const target = path.join(__dirname, 'src')
 
-  spawnSync('npm', ['install'], { cwd: target, stdio: 'inherit', windowsVerbatimArguments: true })
+  spawnSync('npm', ['install'], { cwd: target, stdio: 'inherit' })
 
   // It's not doing anything special, just moving all files due force option
   await Bootdrive.export(target, {
@@ -169,7 +169,7 @@ async function testBin () {
 }
 
 async function tester (brittle, name, fn, expectedOut, expectedMore) {
-  const script = `const test = require('${brittle}')\n\nconst _fn = (${fn.toString()})\n\ntest('${name}', _fn)`
+  const script = `const test = require('${brittle}');\n\nconst _fn = (${fn.toString()});\n\ntest('${name}', _fn);`
   const { status, error, stdout, stderr } = spawnSync(process.execPath, ['-e', script], { encoding: 'utf8', windowsVerbatimArguments: true })
 
   validate({ status, error, stdout, stderr }, expectedOut, expectedMore)
