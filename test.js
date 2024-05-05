@@ -4,6 +4,8 @@ const { spawnSync } = require('child_process')
 const Bootdrive = require('bootdrive-cli')
 const tmp = require('test-tmp')
 
+const shell = process.platform === 'win32'
+
 main().catch(err => {
   console.error(err)
   process.exit(1)
@@ -18,7 +20,7 @@ async function testLib () {
   const out = await tmp()
   const target = path.join(__dirname, 'src')
 
-  spawnSync('npm', ['install'], { cwd: target, stdio: 'inherit' })
+  spawnSync('npm', ['install'], { cwd: target, stdio: 'inherit', shell })
 
   // It's not doing anything special, just moving all files due force option
   await Bootdrive.export(target, {
@@ -100,7 +102,7 @@ async function testBin () {
   const out = await tmp()
   const target = path.join(__dirname, 'src')
 
-  spawnSync('npm', ['install'], { cwd: target, shell: true })
+  spawnSync('npm', ['install'], { cwd: target, shell })
 
   // It's not doing anything special, just moving all files due force option
   await Bootdrive.export(target, {
@@ -183,7 +185,7 @@ async function tester (brittle, name, fn, expectedOut, expectedMore) {
     test('${name}', (${fn.toString()}))
   `)
 
-  const { status, error, stdout, stderr } = spawnSync(process.execPath, [filename], { encoding: 'utf8' })
+  const { status, error, stdout, stderr } = spawnSync(process.execPath, [filename], { encoding: 'utf8', shell })
 
   validate({ status, error, stdout, stderr }, expectedOut, expectedMore)
 
@@ -202,7 +204,7 @@ async function cli (brittle, file, expectedOut, expectedMore) {
 
   args.push(filename)
 
-  const { status, error, stdout, stderr } = spawnSync(cmd, args, { cwd, encoding: 'utf8' })
+  const { status, error, stdout, stderr } = spawnSync(cmd, args, { cwd, encoding: 'utf8', shell })
 
   validate({ status, error, stdout, stderr }, expectedOut, expectedMore)
 
