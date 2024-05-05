@@ -52,26 +52,31 @@ async function testLib () {
 
   await tester(brittle, 'fail',
     async function (t) {
-      t.ok(false)
+      t.fail()
     },
     `
     TAP version 13
 
     # fail
-        not ok 1 - expected truthy value
+        not ok 1 - failed
           ---
-          operator: ok
+          operator: fail
+          source: |
+                test('fail', (async function (t) {
+                  t.fail()
+            --------^
+                }))
           stack: |
-            _fn ([eval]:4:9)
-            Test._run (./boot/node_modules/brittle/index.js:576:13)
+            /tmp/tmp-test-253abbc1b3c25/test.js:5:9
+            Test._run (/tmp/tmp-test-62c151856b73b/node_modules/brittle/index.js:576:13)
             process.processTicksAndRejections (node:internal/process/task_queues:95:5)
           ...
-    not ok 1 - fail # time = 3.74543ms
+    not ok 1 - fail # time = 4.261567ms
 
     1..1
     # tests = 0/1 pass
     # asserts = 0/1 pass
-    # time = 9.068592ms
+    # time = 10.069995ms
 
     # not ok
     `,
@@ -261,6 +266,7 @@ function standardizeTap (stdout) {
     .replace(/[/\\]/g, '/')
     .split('\n')
     .map(n => n.trim())
+    .map(line => line.includes('tmp-test-') ? null : line)
     .filter(n => n)
     .join('\n')
 }
