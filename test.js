@@ -97,7 +97,7 @@ async function testBin () {
   await cli(
     [brittle],
     `
-    const test = require('${unixResolve(path.join(out, 'index.js'))}')
+    const test = require('${path.join(out, 'index.js')}')
 
     test('basic', function (t) {
       t.pass()
@@ -123,7 +123,7 @@ async function testBin () {
   await cli(
     [brittle, '--coverage'],
     `
-    const test = require('${unixResolve(path.join(out, 'index.js'))}')
+    const test = require('${path.join(out, 'index.js')}')
 
     test('basic', function (t) {
       t.pass()
