@@ -2,7 +2,6 @@ const fs = require('fs')
 const path = require('path')
 const { spawn, spawnSync } = require('child_process')
 const tmp = require('test-tmp')
-const unixResolve = require('unix-path-resolve')
 
 main().catch(err => {
   console.error(err)
@@ -20,7 +19,7 @@ async function testLib () {
 
   spawnSync(process.execPath, [path.join(__dirname, 'build.js'), '--target=' + target, '--out=' + out], { stdio: 'inherit' })
 
-  const brittle = unixResolve('/', path.join(out, 'index.js'))
+  const brittle = path.join(out, 'index.js')
 
   await tester(brittle, 'pass',
     async function (t) {
@@ -90,7 +89,7 @@ async function testBin () {
 
   spawnSync(process.execPath, [path.join(__dirname, 'build.js'), '--target=' + target, '--out=' + out], { stdio: 'inherit' })
 
-  const brittle = unixResolve('/', path.join(out, 'bin.js'))
+  const brittle = path.join(out, 'bin.js')
 
   await fs.promises.chmod(brittle, 0o744)
 
@@ -156,10 +155,10 @@ async function testBin () {
 
 async function tester (brittle, name, fn, expectedOut, expectedMore) {
   const { exitCode: status, error, stdout, stderr } = await executeCode(`
-    const test = require('${brittle}')
+    const test = require('./${path.basename(brittle)}')
 
     test('${name}', (${fn.toString()}))
-  `)
+  `, { cwd: path.dirname(brittle) })
 
   validate({ status, error, stdout, stderr }, expectedOut, expectedMore)
 
@@ -167,16 +166,15 @@ async function tester (brittle, name, fn, expectedOut, expectedMore) {
 }
 
 async function cli (brittle, file, expectedOut, expectedMore) {
-  const dir = await tmp()
-  const filename = path.join(dir, 'test.js')
-
-  await fs.promises.writeFile(filename, file)
-
   const cmd = brittle[0]
   const args = brittle.slice(1)
   const cwd = path.dirname(cmd)
 
-  args.push(unixResolve(filename))
+  const filename = path.join(cwd, 'test-' + Math.random().toString().slice(2) + '.js')
+
+  await fs.promises.writeFile(filename, file)
+
+  args.push('./' + path.basename(filename))
 
   const { status, error, stdout, stderr } = spawnSync(cmd, args, { cwd, encoding: 'utf8' })
 
@@ -247,11 +245,15 @@ function standardizeTap (stdout) {
     .join('\n')
 }
 
-function executeCode (script) {
+function executeCode (script, opts = {}) {
   return new Promise((resolve, reject) => {
+    const {
+      cwd = null
+    } = opts
+
     const args = ['-e', script]
-    const opts = { timeout: 30000, cwd: path.join(__dirname) }
-    const child = spawn(process.execPath, args, opts)
+    const options = { timeout: 30000, cwd }
+    const child = spawn(process.execPath, args, options)
 
     let exitCode
     let stdout = ''
