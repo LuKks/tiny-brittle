@@ -1,8 +1,8 @@
 const fs = require('fs')
 const path = require('path')
 const { spawn, spawnSync } = require('child_process')
-const Bootdrive = require('bootdrive-cli')
 const tmp = require('test-tmp')
+const unixResolve = require('unix-path-resolve')
 
 main().catch(err => {
   console.error(err)
@@ -15,19 +15,12 @@ async function main () {
 }
 
 async function testLib () {
-  const out = await tmp()
   const target = path.join(__dirname, 'src')
+  const out = await tmp()
 
-  spawnSync('npm', ['install'], { cwd: target, stdio: 'inherit' })
+  spawnSync(process.execPath, [path.join(__dirname, 'build.js'), '--target=' + target, '--out=' + out], { stdio: 'inherit' })
 
-  // It's not doing anything special, just moving all files due force option
-  await Bootdrive.export(target, {
-    entrypoint: ['index.js', 'bin.js'],
-    out,
-    force: true
-  })
-
-  const brittle = path.join(out, 'index.js')
+  const brittle = unixResolve('/', path.join(out, 'index.js'))
 
   await tester(brittle, 'pass',
     async function (t) {
@@ -92,19 +85,12 @@ async function testLib () {
 }
 
 async function testBin () {
-  const out = await tmp()
   const target = path.join(__dirname, 'src')
+  const out = await tmp()
 
-  spawnSync('npm', ['install'], { cwd: target })
+  spawnSync(process.execPath, [path.join(__dirname, 'build.js'), '--target=' + target, '--out=' + out], { stdio: 'inherit' })
 
-  // It's not doing anything special, just moving all files due force option
-  await Bootdrive.export(target, {
-    entrypoint: ['index.js', 'bin.js'],
-    out,
-    force: true
-  })
-
-  const brittle = path.join(out, 'bin.js')
+  const brittle = unixResolve('/', path.join(out, 'bin.js'))
 
   await fs.promises.chmod(brittle, 0o744)
 
@@ -169,16 +155,6 @@ async function testBin () {
 }
 
 async function tester (brittle, name, fn, expectedOut, expectedMore) {
-  // const dir = await tmp()
-  /* const filename = path.join(path.dirname(brittle), '_test.js')
-
-  await fs.promises.writeFile(filename, `
-    const test = require('./${path.basename(brittle)}')
-
-    test('${name}', (${fn.toString()}))
-  `) */
-
-  // const { status, error, stdout, stderr } = spawnSync(process.execPath, [filename], { encoding: 'utf8' })
   const { exitCode: status, error, stdout, stderr } = await executeCode(`
     const test = require('${brittle}')
 
