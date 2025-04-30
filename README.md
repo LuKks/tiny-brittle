@@ -2,7 +2,7 @@
 
 Brittle compiled with zero dependencies
 
-```
+```sh
 npm i tiny-brittle
 ```
 
@@ -29,32 +29,6 @@ test('basic', function (t) {
   t.pass()
 })
 ```
-
-## Build from source
-
-<details>
-<summary>How to compile</summary>
-
-First, you need the Bootdrive CLI
-
-`npm i -g bootdrive-cli`
-
-Then clone the repo, and go into the directory
-
-```
-git clone git@github.com:lukks/tiny-brittle.git
-cd tiny-brittle
-```
-
-Install dependencies for `src`
-
-`npm install -C ./src`
-
-And bundle it within that working directory
-
-`bootdrive export -d ./src -e index.js -e bin.js -o ./boot --force`
-
-</details>
 
 ## License
 

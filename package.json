@@ -2,16 +2,20 @@
   "name": "tiny-brittle",
   "version": "0.0.0",
   "description": "Brittle compiled with zero dependencies",
-  "main": "boot/index.js",
-  "files": [
-    "build.js",
-    "src"
-  ],
+  "main": "node_modules/brittle/index.js",
   "bin": {
-    "brittle": "boot/bin.js"
+    "brittle": "node_modules/brittle/bin/node.js",
+    "brittle-node": "node_modules/brittle/bin/node.js",
+    "brittle-bare": "node_modules/brittle/bin/bare.js",
+    "brittle-pear": "node_modules/brittle/bin/pear.js"
   },
+  "files": [
+    "README.md",
+    "LICENSE",
+    "node_modules"
+  ],
   "scripts": {
-    "test": "standard && node test.js"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
@@ -24,9 +28,6 @@
   },
   "homepage": "https://github.com/lukks/tiny-brittle#readme",
   "devDependencies": {
-    "localdrive": "^1.11.4",
-    "mirror-format": "^1.0.1",
-    "standard": "^17.1.0",
-    "test-tmp": "^1.2.1"
+    "brittle": "^3.16.0"
   }
 }
