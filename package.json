@@ -1,6 +1,6 @@
 {
   "name": "tiny-brittle",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "description": "Brittle compiled with zero dependencies",
   "main": "node_modules/brittle/index.js",
   "bin": {
